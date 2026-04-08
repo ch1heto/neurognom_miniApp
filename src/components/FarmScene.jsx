@@ -23,15 +23,7 @@ export default function FarmScene() {
           shadow-mapSize-height={2048}
         />
 
-        <gridHelper args={[20, 20]} />
-        <axesHelper args={[5]} />
-
         <CameraController isFocused={isFocused} />
-
-        <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.25, 0]}>
-          <circleGeometry args={[7, 64]} />
-          <meshStandardMaterial color="#d6dce3" />
-        </mesh>
 
         <group onClick={() => setIsFocused(!isFocused)}>
           <Suspense fallback={null}>
