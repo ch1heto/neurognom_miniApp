@@ -1,7 +1,6 @@
-import { Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Center, OrbitControls, useGLTF } from "@react-three/drei";
-import shelfModelUrl from "../../models/polka2.glb?url";
 
 const SLOT_POSITIONS = [
   [-1, 1, 0],
@@ -9,66 +8,83 @@ const SLOT_POSITIONS = [
   [1, 1, 0]
 ];
 
+const SHELF_MODEL_PATH = "/models/polka2.glb";
+
 export default function FarmScene({ plantedSlotIds, onPlant }) {
+  const groupRef = useRef(null);
+
+  const handleFarmClick = (event) => {
+    event.stopPropagation();
+    console.log("Farm clicked! Ready for zoom transition.");
+  };
+
   return (
     <div className="h-full w-full">
-      <Canvas
-        shadows
-        dpr={[1, 2]}
-        camera={{ position: [8, 8, 8], fov: 42 }}
-        onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
-      >
-        <color attach="background" args={["#09130d"]} />
-        <fog attach="fog" args={["#09130d", 12, 28]} />
+      <Canvas camera={{ position: [0, 8, 25], fov: 45 }} shadows dpr={[1, 2]}>
+        <color attach="background" args={["#eef2f6"]} />
 
-        <ambientLight intensity={1.6} />
+        <ambientLight intensity={1.5} color="white" />
         <directionalLight
           castShadow
-          intensity={2.4}
-          position={[6, 10, 8]}
+          intensity={2}
+          position={[10, 10, 10]}
+          color="white"
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
         />
-        <directionalLight intensity={0.8} position={[-6, 5, -4]} color="#b9ffd0" />
 
         <OrbitControls
           makeDefault
-          target={[0, 0.8, 0]}
+          target={[0, 2, 0]}
+          enableZoom={false}
           enablePan={false}
-          minDistance={6}
-          maxDistance={18}
-          minPolarAngle={0.55}
-          maxPolarAngle={Math.PI / 2.05}
+          enableRotate={false}
         />
+
+        <ShowcaseRotation groupRef={groupRef} />
 
         <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.25, 0]}>
           <circleGeometry args={[7, 64]} />
-          <meshStandardMaterial color="#122d1b" />
+          <meshStandardMaterial color="#d6dce3" />
         </mesh>
 
-        <Suspense fallback={null}>
-          <HydroponicShelf />
-        </Suspense>
+        <group ref={groupRef} onClick={handleFarmClick}>
+          <Suspense fallback={null}>
+            <HydroponicShelf />
+          </Suspense>
 
-        {SLOT_POSITIONS.map((position, index) => (
-          <PlantingSlot
-            key={index}
-            index={index}
-            position={position}
-            isPlanted={plantedSlotIds.includes(index)}
-            onPlant={onPlant}
-          />
-        ))}
+          {SLOT_POSITIONS.map((position, index) => (
+            <PlantingSlot
+              key={index}
+              index={index}
+              position={position}
+              isPlanted={plantedSlotIds.includes(index)}
+              onPlant={onPlant}
+            />
+          ))}
+        </group>
       </Canvas>
     </div>
   );
 }
 
+function ShowcaseRotation({ groupRef }) {
+  useFrame((_, delta) => {
+    if (!groupRef.current) {
+      return;
+    }
+
+    groupRef.current.rotation.y += delta * 0.1;
+  });
+
+  return null;
+}
+
 function HydroponicShelf() {
-  const { scene } = useGLTF(shelfModelUrl);
+  const { scene } = useGLTF(SHELF_MODEL_PATH);
 
   return (
-    <Center>
+    <Center position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
       <primitive object={scene} dispose={null} />
     </Center>
   );
@@ -85,7 +101,7 @@ function PlantingSlot({ index, position, isPlanted, onPlant }) {
       <mesh
         receiveShadow
         rotation={[-Math.PI / 2, 0, 0]}
-        onClick={handleClick}
+        onPointerDown={handleClick}
       >
         <circleGeometry args={[0.34, 40]} />
         <meshStandardMaterial
@@ -106,4 +122,4 @@ function PlantingSlot({ index, position, isPlanted, onPlant }) {
   );
 }
 
-useGLTF.preload(shelfModelUrl);
+useGLTF.preload(SHELF_MODEL_PATH);
