@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top, rgba(109, 255, 153, 0.16), transparent 35%),
+      linear-gradient(180deg, #102616 0%, #08120c 100%);
+    color: #f8fffa;
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+
+  canvas {
+    touch-action: none;
+  }
+
+  button {
+    touch-action: manipulation;
+  }
+}
