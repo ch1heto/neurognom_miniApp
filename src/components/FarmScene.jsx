@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Center, useGLTF } from "@react-three/drei";
@@ -39,6 +39,29 @@ function HydroponicShelf({ isFocused }) {
   const { scene } = useGLTF(SHELF_MODEL_PATH);
   const shelfRef = useRef(null);
 
+  useEffect(() => {
+    scene.traverse((child) => {
+      if (child.isMesh && child.material) {
+        // TANK (Blue)
+        if (["Cube", "Cube000"].includes(child.name)) {
+          child.material = child.material.clone();
+          child.material.color.set("#2563eb");
+          child.material.emissive.set("#000000");
+          child.material.roughness = 0.5;
+        }
+        // TRAYS (Grey Plastic)
+        else if (["Cube018", "Cube024", "Cube009", "Cube010", "Cube018_1", "Cube024_1"].includes(child.name)) {
+          child.material = child.material.clone();
+          child.material.color.set("#9ca3af");
+          child.material.emissive.set("#000000");
+          child.material.roughness = 0.9;
+          child.material.metalness = 0.1;
+        }
+        // EVERYTHING ELSE (Frame, pipes) is ignored and keeps its original color
+      }
+    });
+  }, [scene]);
+
   useFrame((state, delta) => {
     if (!shelfRef.current) return;
 
@@ -56,7 +79,15 @@ function HydroponicShelf({ isFocused }) {
   return (
     <group ref={shelfRef}>
       <Center position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <primitive object={scene} dispose={null} scale={0.05} />
+        <primitive
+          object={scene}
+          dispose={null}
+          scale={0.05}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            console.log("Clicked part:", e.object.name);
+          }}
+        />
       </Center>
     </group>
   );
