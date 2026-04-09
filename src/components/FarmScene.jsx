@@ -42,22 +42,13 @@ function HydroponicShelf({ isFocused }) {
   useEffect(() => {
     scene.traverse((child) => {
       if (child.isMesh && child.material) {
-        // TANK (Blue)
-        if (["Cube", "Cube000"].includes(child.name)) {
-          child.material = child.material.clone();
-          child.material.color.set("#2563eb");
-          child.material.emissive.set("#000000");
-          child.material.roughness = 0.5;
-        }
-        // TRAYS (Grey Plastic)
-        else if (["Cube018", "Cube024", "Cube009", "Cube010", "Cube018_1", "Cube024_1"].includes(child.name)) {
+        if (["Cylinder035", "Cylinder043", "Cylinder040", "Cylinder037", "Cylinder026", "Cylinder029", "Cylinder032", "Cylinder024"].includes(child.name)) {
           child.material = child.material.clone();
           child.material.color.set("#9ca3af");
           child.material.emissive.set("#000000");
           child.material.roughness = 0.9;
           child.material.metalness = 0.1;
         }
-        // EVERYTHING ELSE (Frame, pipes) is ignored and keeps its original color
       }
     });
   }, [scene]);
