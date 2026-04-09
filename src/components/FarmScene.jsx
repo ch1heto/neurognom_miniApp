@@ -4,14 +4,17 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Center, useGLTF } from "@react-three/drei";
 
 const SHELF_MODEL_PATH = "/models/polka2.glb";
+const FARM_SCALE = 0.05;
+const OUTLINE_SCALE = FARM_SCALE * 1.006;
 
 export default function FarmScene() {
   const [isFocused, setIsFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div className="h-full w-full">
       <Canvas camera={{ position: [12, 6, 12], fov: 45 }} shadows dpr={[1, 2]}>
-        <color attach="background" args={["#eef2f6"]} />
+        <color attach="background" args={["#1e293b"]} />
 
         <ambientLight intensity={1.5} color="white" />
         <directionalLight
@@ -25,9 +28,19 @@ export default function FarmScene() {
 
         <CameraController isFocused={isFocused} />
 
-        <group onClick={() => setIsFocused(!isFocused)}>
+        <group
+          onClick={() => setIsFocused(!isFocused)}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            setHovered(true);
+          }}
+          onPointerOut={(e) => {
+            e.stopPropagation();
+            setHovered(false);
+          }}
+        >
           <Suspense fallback={null}>
-            <HydroponicShelf isFocused={isFocused} />
+            <HydroponicShelf isFocused={isFocused} hovered={hovered} />
           </Suspense>
         </group>
       </Canvas>
@@ -35,9 +48,32 @@ export default function FarmScene() {
   );
 }
 
-function HydroponicShelf({ isFocused }) {
+function HydroponicShelf({ isFocused, hovered }) {
   const { scene } = useGLTF(SHELF_MODEL_PATH);
   const shelfRef = useRef(null);
+
+  const outlineScene = useMemo(() => {
+    const clone = scene.clone(true);
+
+    clone.traverse((child) => {
+      if (!child.isMesh) {
+        return;
+      }
+
+      child.material = new THREE.MeshBasicMaterial({
+        color: "#34d399",
+        side: THREE.BackSide,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+        toneMapped: false
+      });
+      child.renderOrder = -1;
+      child.raycast = () => null;
+    });
+
+    return clone;
+  }, [scene]);
 
   useEffect(() => {
     scene.traverse((child) => {
@@ -65,15 +101,32 @@ function HydroponicShelf({ isFocused }) {
 
       shelfRef.current.rotation.y = THREE.MathUtils.lerp(currentY, targetY, 0.08);
     }
+
+    outlineScene.traverse((child) => {
+      if (!child.isMesh) {
+        return;
+      }
+
+      const material = child.material;
+      if (!material) {
+        return;
+      }
+
+      const pulse = 0.22 + Math.sin(state.clock.elapsedTime * 1.2) * 0.04;
+      material.opacity = hovered && !isFocused ? pulse : 0;
+    });
   });
 
   return (
     <group ref={shelfRef}>
       <Center position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+        {hovered && !isFocused && (
+          <primitive object={outlineScene} dispose={null} scale={OUTLINE_SCALE} />
+        )}
         <primitive
           object={scene}
           dispose={null}
-          scale={0.05}
+          scale={FARM_SCALE}
           onPointerDown={(e) => {
             e.stopPropagation();
             console.log("Clicked part:", e.object.name);
