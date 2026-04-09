@@ -2,6 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Center, useGLTF } from "@react-three/drei";
+import { EffectComposer, Outline, Select, Selection } from "@react-three/postprocessing";
 
 const SHELF_MODEL_PATH = "/models/polka2.glb";
 const FARM_SCALE = 0.05;
@@ -22,53 +23,43 @@ export default function FarmScene() {
 
   return (
     <div className="h-full w-full">
-      <Canvas camera={{ position: [10.5, 6.8, 13.5], fov: 45 }} shadows dpr={[1, 2]}>
+      <Canvas camera={{ position: [12, 6, 12], fov: 45 }} dpr={[1, 2]}>
         <color attach="background" args={["#0b1120"]} />
 
-        <ambientLight intensity={0.5} color="#dbe3ea" />
-        <directionalLight
-          castShadow
-          intensity={1.85}
-          position={[9, 14, 8]}
-          color="#f8fafc"
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-camera-near={1}
-          shadow-camera-far={40}
-          shadow-camera-left={-12}
-          shadow-camera-right={12}
-          shadow-camera-top={12}
-          shadow-camera-bottom={-12}
-          shadow-normalBias={0.03}
-        />
-        <directionalLight
-          intensity={0.45}
-          position={[-7, 6, -9]}
-          color="#cbd5e1"
-        />
+        <ambientLight intensity={1.2} color="white" />
+        <directionalLight intensity={1.5} position={[10, 10, 10]} color="white" />
 
         <CameraController isFocused={isFocused} />
 
-        <group
-          onClick={() => setIsFocused(!isFocused)}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHovered(true);
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            setHovered(false);
-          }}
-        >
-          <Suspense fallback={null}>
-            <HydroponicShelf isFocused={isFocused} hovered={hovered} />
-          </Suspense>
-        </group>
+        <Selection>
+          <EffectComposer autoClear={false}>
+            <Outline
+              blur
+              visibleEdgeColor="#6ee7b7"
+              hiddenEdgeColor="#6ee7b7"
+              edgeStrength={15}
+              edgeThickness={2}
+            />
+          </EffectComposer>
 
-        <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 0]} receiveShadow>
-          <planeGeometry args={[36, 36]} />
-          <shadowMaterial opacity={0.24} transparent />
-        </mesh>
+          <Select enabled={hovered && !isFocused}>
+            <group
+              onClick={() => setIsFocused(!isFocused)}
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                setHovered(true);
+              }}
+              onPointerOut={(e) => {
+                e.stopPropagation();
+                setHovered(false);
+              }}
+            >
+              <Suspense fallback={null}>
+                <HydroponicShelf isFocused={isFocused} hovered={hovered} />
+              </Suspense>
+            </group>
+          </Select>
+        </Selection>
       </Canvas>
     </div>
   );
@@ -91,8 +82,8 @@ function HydroponicShelf({ isFocused, hovered }) {
         return;
       }
 
-      child.castShadow = true;
-      child.receiveShadow = true;
+      child.castShadow = false;
+      child.receiveShadow = false;
       child.material = child.material.clone();
 
       if (TRAY_MESH_NAMES.includes(child.name)) {
