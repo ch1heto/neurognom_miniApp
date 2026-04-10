@@ -1,13 +1,11 @@
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Center, OrbitControls, useGLTF } from "@react-three/drei";
 import { EffectComposer, Outline, Select, Selection } from "@react-three/postprocessing";
-import { useControls } from "leva";
 
-const SHELF_MODEL_PATH = "/models/polka2.glb";
-const FARM_SCALE = 0.05;
-const FREE_CAMERA_TUNING = true;
+const SHELF_MODEL_PATH = "/models/New_city_farm3.glb";
+const FREE_CAMERA_TUNING = false;
 const TRAY_MESH_NAMES = [
   "Cylinder035",
   "Cylinder043",
@@ -19,141 +17,6 @@ const TRAY_MESH_NAMES = [
   "Cylinder024",
 ];
 
-function FarmPipes() {
-  const { posX, posY, posZ, pipeScale, curveHeight, curveWidth, nozzleLength, trayGap } = useControls("Геометрия Труб", {
-    posX: { value: 33.5, min: -100, max: 100, step: 0.5 },
-    posY: { value: 0, min: -100, max: 100, step: 0.5 },
-    posZ: { value: 8.5, min: -100, max: 100, step: 0.5 },
-    pipeScale: { value: 1, min: 0.5, max: 2, step: 0.01 },
-    curveHeight: { value: 12, min: 2, max: 30, step: 0.5 },
-    curveWidth: { value: 18, min: 4, max: 40, step: 0.5 },
-    nozzleLength: { value: 14, min: 2, max: 40, step: 0.5 },
-    trayGap: { value: 19.3, min: 5, max: 40, step: 0.1 },
-  });
-
-  const pvcMaterial = <meshStandardMaterial color="#9ca3af" roughness={0.7} metalness={0.06} />;
-
-  const mainRadius = 1.0;
-  const nozzleRadius = 0.28;
-  const collarRadius = 1.22;
-  const collarLength = 3.2;
-  const nozzleBaseY = -18;
-  const nozzleDirection = -1;
-
-  const nozzleYs = useMemo(
-    () => Array.from({ length: 4 }, (_, index) => nozzleBaseY + index * trayGap),
-    [trayGap]
-  );
-
-  const verticalBottom = nozzleYs[0] - 16;
-  const verticalTop = nozzleYs[3] + 10;
-
-  const curvePoints = useMemo(
-    () => [
-      new THREE.Vector3(0, verticalBottom, 0),
-      new THREE.Vector3(0, verticalTop - curveHeight * 0.45, 0),
-      new THREE.Vector3(0, verticalTop, 0),
-      new THREE.Vector3(curveWidth * 0.3, verticalTop + curveHeight * 0.65, 0),
-      new THREE.Vector3(curveWidth, verticalTop + curveHeight * 0.2, 0),
-    ],
-    [verticalBottom, verticalTop, curveHeight, curveWidth]
-  );
-
-  const manifoldCurve = useMemo(
-    () => new THREE.CatmullRomCurve3(curvePoints),
-    [curvePoints]
-  );
-
-  const tipPoint = curvePoints[curvePoints.length - 1];
-  const bottomCollarY = verticalBottom + collarLength * 0.5;
-  const topCollarX = tipPoint.x - collarLength * 0.5;
-
-  return (
-    <group name="curved-manifold-pipe" position={[posX, posY, posZ]} scale={pipeScale}>
-      <mesh>
-        <tubeGeometry args={[manifoldCurve, 96, mainRadius, 32, false]} />
-        {pvcMaterial}
-      </mesh>
-
-      <mesh position={[0, bottomCollarY, 0]}>
-        <cylinderGeometry args={[collarRadius, collarRadius, collarLength, 32]} />
-        {pvcMaterial}
-      </mesh>
-
-      <mesh position={[topCollarX, tipPoint.y, tipPoint.z]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[collarRadius, collarRadius, collarLength, 32]} />
-        {pvcMaterial}
-      </mesh>
-
-      {nozzleYs.map((y, index) => (
-        <mesh
-          key={index}
-          position={[nozzleDirection * (mainRadius + nozzleLength / 2), y, 0]}
-          rotation={[0, 0, Math.PI / 2]}
-        >
-          <cylinderGeometry args={[nozzleRadius, nozzleRadius, nozzleLength, 24]} />
-          {pvcMaterial}
-        </mesh>
-      ))}
-    </group>
-  );
-}
-function ImportedPipe() {
-  const { scene, nodes, materials } = useGLTF("/models/pipe_model.glb");
-
-  useLayoutEffect(() => {
-    ["Torus", "Cylinder014", "Torus002", "Cylinder019", "Cylinder018_1"].forEach((name) => {
-      if (nodes?.[name]) {
-        nodes[name].visible = false;
-      }
-    });
-  }, [nodes]);
-
-  const { pX, pY, pZ, scaleX, scaleY, scaleZ, rotX, rotY, rotZ } = useControls("Тест 3D Трубы", {
-    pX: { value: 0, min: -5000, max: 5000, step: 0.1 },
-    pY: { value: 0, min: -5000, max: 5000, step: 0.1 },
-    pZ: { value: 0, min: -5000, max: 5000, step: 0.1 },
-    scaleX: { value: 100, min: 1, max: 2000, step: 0.1 },
-    scaleY: { value: 100, min: 1, max: 2000, step: 0.1 },
-    scaleZ: { value: 100, min: 1, max: 2000, step: 0.1 },
-    rotX: { value: 0, min: -Math.PI, max: Math.PI, step: 0.05 },
-    rotY: { value: 0, min: -Math.PI, max: Math.PI, step: 0.05 },
-    rotZ: { value: 0, min: -Math.PI, max: Math.PI, step: 0.05 },
-  });
-
-  const { tapX, tapY, tapZ, tapScale, trayGap } = useControls("Краники (Клоны)", {
-    tapX: { value: 0, min: -500, max: 500, step: 0.1 },
-    tapY: { value: 0, min: -500, max: 500, step: 0.1 },
-    tapZ: { value: 0, min: -500, max: 500, step: 0.1 },
-    tapScale: { value: 100, min: 1, max: 2000, step: 0.1 },
-    trayGap: { value: 20, min: 5, max: 100, step: 0.1 },
-  });
-
-  const tapYs = [tapY, tapY - trayGap, tapY - trayGap * 2, tapY - trayGap * 3];
-  const tapGeometry = nodes?.Cylinder011?.geometry;
-  const fallbackMaterial = nodes?.Cylinder011?.material ?? Object.values(materials ?? {})[0];
-
-  return (
-    <group>
-      <primitive
-        object={scene}
-        position={[pX, pY, pZ]}
-        scale={[scaleX, scaleY, scaleZ]}
-        rotation={[rotX, rotY, rotZ]}
-      />
-
-      {tapGeometry && tapYs.map((currentY, index) => (
-        <mesh
-          key={`tap-${index}`}
-          geometry={nodes.Cylinder011.geometry}
-          material={fallbackMaterial}
-          position={[tapX, currentY, tapZ]}
-          scale={[tapScale, tapScale, tapScale]}
-        />
-      ))}
-    </group>
-  );
-}
 export default function FarmScene() {
   const [isFocused, setIsFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -263,8 +126,8 @@ function HydroponicShelf({ isFocused, hovered }) {
       shelfRef.current.rotation.y += delta * 0.05;
     } else {
       const currentY = shelfRef.current.rotation.y;
-      const n = Math.round((currentY - Math.PI / 2) / Math.PI);
-      const targetY = n * Math.PI + Math.PI / 2;
+      const n = Math.round(currentY / Math.PI);
+      const targetY = n * Math.PI;
 
       shelfRef.current.rotation.y = THREE.MathUtils.lerp(currentY, targetY, 0.08);
     }
@@ -299,7 +162,7 @@ function HydroponicShelf({ isFocused, hovered }) {
 
   return (
     <group ref={shelfRef}>
-      <Center position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+      <Center position={[0, 0, 0]} rotation={[0, 0, 0]}>
         <group scale={0.05}>
           <primitive
             object={scene}
@@ -309,8 +172,6 @@ function HydroponicShelf({ isFocused, hovered }) {
               console.log("Clicked part:", e.object.name);
             }}
           />
-          {/* <FarmPipes /> */}
-          <ImportedPipe />
         </group>
       </Center>
     </group>
@@ -319,14 +180,22 @@ function HydroponicShelf({ isFocused, hovered }) {
 
 function CameraController({ isFocused }) {
   const targetPos = useMemo(() => new THREE.Vector3(), []);
-  const lookAtPos = useMemo(() => new THREE.Vector3(0, 1.5, 0), []);
+  const lookAtPos = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   useFrame((state) => {
+    const isMobile = state.size.width < state.size.height;
+    const targetFov = isFocused ? (isMobile ? 32 : 30) : 45;
+
     if (isFocused) {
-      targetPos.set(0, 5, 15);
+      // If mobile, we move the camera further back (Z=28) to fit the width
+      const zDist = isMobile ? 23 : 19;
+      targetPos.set(0, 0, zDist);
     } else {
-      targetPos.set(10.5, 6.8, 13.5);
+      targetPos.set(12, 2, 16);
     }
+
+    state.camera.fov = THREE.MathUtils.lerp(state.camera.fov, targetFov, 0.05);
+    state.camera.updateProjectionMatrix();
 
     state.camera.position.lerp(targetPos, 0.05);
     state.camera.lookAt(lookAtPos);
@@ -337,5 +206,4 @@ function CameraController({ isFocused }) {
 
 useGLTF.preload(SHELF_MODEL_PATH);
 
-useGLTF.preload("/models/pipe_model.glb");
 
